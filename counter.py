@@ -30,18 +30,14 @@ def detection_task(hog,inbox,outbox):
             result = np.array([[x, y, x + w, y + h] for (x, y, w, h) in result])
             result = non_max_suppression(result, probs=None, overlapThresh=0.65)
             outbox.put((result,rgb))
-#            
-#def collection_task(inbox,outbox,frame_queue):
-#    while True:
         
 try:
     inbox = Queue(maxsize=1)
     outbox = Queue(maxsize=1)
     frame_queue = Queue()
     screen = LCD()
-    screen.display("Initializing...")
+    screen.display(" People counter\n    made by\n Zajac&Wieczorek\n\n Initializing...")
     time.sleep(1)
-    screen.display("\n  PEOPLE COUNT\n       0")
 
     # initializing detector
     hog = cv2.HOGDescriptor()
@@ -52,25 +48,16 @@ try:
     p.daemon = True
     p.start()
 
-    #p2 = Process(target=collection_task, args=(inbox,outbox,frame_queue,))
-    #p2.daemon = True
-
     clear = lambda: os.system('clear')
 
     W = 500
     H = 500
-#    frameskip = 30
-
-
 
     # initialize video stream from camera
     vs = VideoStream(src=0).start()
 #    vs = cv2.VideoCapture(0)
     time.sleep(2.0)
     fps = FPS().start()
-
-#    fourcc = cv2.VideoWriter_fourcc(*"XVID")
-#    writer = cv2.VideoWriter("outputt.avi", fourcc, 30, (W, H), True)
 
     totalFrames = 0
     totalCount = 0
@@ -80,24 +67,14 @@ try:
     trackable_objects = {}
 
     inbox.put(imutils.resize(vs.read(),W))
-
-    #p2.start()
+    screen.clear()
+    screen.display("\n  PEOPLE COUNT\n       0")
 
     while True:
-        
-        # load frame from videostream
-        # frame = vs.read()
-        # # resize the frame (efficiency)
-        # frame = imutils.resize(frame, width=W)
-        # rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        # pick = []
-        # rects2 = []
-
 
         if inbox.empty() and outbox.empty():
 #            print("putting frame")
             frame_queue.put(imutils.resize(vs.read(),W))
-        
         
         if not outbox.empty():
 
@@ -114,8 +91,6 @@ try:
                 rect = dlib.rectangle(detection[0],detection[1],detection[2],detection[3])
                 cor_tracker.start_track(rgb, rect)
                 cor_trackers.append(cor_tracker)
-#            print(type(pick))
-
 
    
             while(not frame_queue.empty()):
@@ -123,8 +98,6 @@ try:
                 fps.update()
                 fps.stop()
                 
-#                message = "People count: {}".format(totalCount)#frame_queue.qsize(),round(fps.fps(),2))
-#                screen.display(message)
                 frame = frame_queue.get()
                 pick = []
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -139,10 +112,7 @@ try:
         
                      #add the box to rects
                     pick.append((startX,startY,endX,endY))
-
-                cv2.line(frame, (W // 2, 0), (W // 2, W), (0, 255, 255), 2)
-        
-
+    
                 objects = point_tracker.update(pick)
 
                 for(oid,point) in objects.items():
@@ -174,124 +144,18 @@ try:
 
                     #add objects to tracked    
                     trackable_objects[oid]=to
-
-                    text = "ID {}".format(oid)
-                    count_text = "\n  PEOPLE COUNT\n       {}".format(totalCount)
-                    cv2.putText(frame, text, (point[0] - 10, point[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                    cv2.circle(frame, (point[0], point[1]), 4, (0, 255, 0), -1)
-                    
-                    
-                # draw the bounding boxes
-                # for (xA, yA, xB, yB) in pick:
-                #     cv2.rectangle(frame, (xA, yA), (xB, yB), (0, 255, 0), 2)
-
-                count_text = "\n  PEOPLE COUNT\n       {}".format(totalCount)
-                cv2.putText(frame, count_text, (10, H - 20),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-                
-                # cv2.putText(frame, fps.fps(),(10,H-60),
-                #         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-                # show the output frames
-            
-#                print("writing frame")
-##                    time.sleep(0.2)
-#                cv2.imshow("Frame",frame)
-#                writer.write(frame)
-            
+                                        
             print(datetime.datetime.now())
             inbox.put(imutils.resize(vs.read(),W))
-        
-        key = cv2.waitKey(1) & 0xFF
-                
-
-
-        
-        # # on all other frames perform dlib tracking
-        # else:
-        #     for cor_tracker in cor_trackers:
-        #         #update tracker and get position
-        #         cor_tracker.update(rgb)
-        #         pos = cor_tracker.get_position()
-
-        #         startX = int(pos.left())
-        #         startY = int(pos.top())
-        #         endX = int(pos.right())
-        #         endY = int(pos.bottom())
-        
-        #         #add the box to rects
-        #         pick.append((startX,startY,endX,endY))
-                
-        
-        # cv2.line(frame, (W // 2, 0), (W // 2, W), (0, 255, 255), 2)
-        
-
-        # objects = point_tracker.update(pick)
-
-        # for(oid,point) in objects.items():
-        #     to = trackable_objects.get(oid,None)
-        #     if to is None:
-        #         to = TrackableObject(oid,point)
-        #     else:
-        #         # now we determine in which direction an object moves
-        #         # when it crosses the line (e.g. it appears on the left
-        #         # when it comes from the right) it will be counted and
-        #         # marked as such
-
-        #         x_coords = [p[0] for p in to.points]
-        #         direction = point[0] - np.mean(x_coords)
-        #         to.points.append(point)
-
-        #         if not to.counted:
-        #             if direction < 0 and point[0] < W // 2:
-        #                 totalCount+=1
-        #                 to.counted= True
-        #             elif direction > 0 and point[0] > W // 2:
-        #                 totalCount+=1
-        #                 to.counted = True
-
-        #     #add objects to tracked    
-        #     trackable_objects[oid]=to
-
-        #     text = "ID {}".format(oid)
-        #     cv2.putText(frame, text, (point[0] - 10, point[1] - 10),
-        #         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-        #     cv2.circle(frame, (point[0], point[1]), 4, (0, 255, 0), -1)
-            
-            
-        # # draw the bounding boxes
-        # # for (xA, yA, xB, yB) in pick:
-        # #     cv2.rectangle(frame, (xA, yA), (xB, yB), (0, 255, 0), 2)
-
-        # count_text = "Count: {}".format(totalCount)
-        # cv2.putText(frame, count_text, (10, H - 20),
-        #       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-        
-        # # cv2.putText(frame, fps.fps(),(10,H-60),
-        # #         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-        # # show the output frames
-        # cv2.imshow("Frame",frame)
-        # key = cv2.waitKey(1) & 0xFF
-
-        
-        # clear()
-#        fps.update()
-#        fps.stop()
-#        print(fps.fps())
-
-        
-        # exit using q
-        if key == ord("q"):
-            break
 
         totalFrames += 1
 except KeyboardInterrupt:
     print("\nTerminating")
+    screen.display("\n    Counter\n   terminated")
+    time.sleep(2)
+    screen.clear()
 finally:
-    fps.stop()
-    print(fps.fps())
     vs.stop()
-#    writer.release()
     inbox.close()
     outbox.close()
     p.terminate()
